@@ -51,7 +51,7 @@ class Fcr {
   void illuminaCoordinates(double x, double y, double &theta, double &r);
   string createHeader(string content, int samples, int snps);
   double logR(double theta, double r, Egt egt, long snpIndex);
-  void run(Egt *egt, Manifest *manifest, ostream *outStream, vector<string> infiles, vector<string> sampleNames);
+  void write(Egt *egt, Manifest *manifest, ostream *outStream, vector<string> infiles, vector<string> sampleNames);
 
 };
 

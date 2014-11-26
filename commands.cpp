@@ -270,14 +270,10 @@ void Commander::commandFCR(string infile, string outfile, string manfile, string
   if (infile == "") throw("commandCreate(): infile not specified");
   parseInfile(infile, sampleNames, infiles);
   loadManifest(manifest, manfile);
-  //sort(manifest->snps.begin(), manifest->snps.end(), SNPSorter());
   egt->open(egtfile);
   // now we have output stream, GTC paths, populated manifest and EGT
-  // want to read intensities and scores from each GTC file
-  // iterate over all (snp, sample) pairs
-  // write output to a (gzipped?) FCR file
-  // Fields in each FCR line: snp_name, sample_id, allele_A, allele_B, score, chr, pos, theta, R, X_normalized, Y_normalized, X_raw, Y_raw, BAF, logR
-  fcr->run(egt, manifest, outStream, infiles, sampleNames);
+  // write output to an FCR file
+  fcr->write(egt, manifest, outStream, infiles, sampleNames);
   delete manifest;
   delete egt;
 }
