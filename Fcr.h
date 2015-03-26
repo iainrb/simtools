@@ -55,4 +55,32 @@ class Fcr {
 
 };
 
+class FcrData {
+ // Container for data in an FCR file
+ // Intended only for running tests
+ // "Real" FCR files are typically too big to slurp into memory
+ public:
+  int total;
+  FcrData(string infile);
+  vector<string> header;
+  vector<string> snps;
+  vector<string> samples;
+  vector<string> alleles_a;
+  vector<string> alleles_b;
+  vector<double> gcScore;
+  vector<double> theta;
+  vector<double> radius;
+  vector<double> x;
+  vector<double> y;
+  vector<int> x_raw;
+  vector<int> y_raw;
+  vector<double> logR;
+  vector<double> baf;
+  bool equivalent(FcrData other, bool verbose=true);
+
+ private:
+  vector<string> splitByWhiteSpace(string str);
+
+};
+
 #endif	// _FCR_H

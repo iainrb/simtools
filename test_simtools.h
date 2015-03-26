@@ -114,6 +114,8 @@ class TestBase :  public CxxTest::TestSuite
     TS_ASSERT_EQUALS(size, testSize);
   }
 
+
+
   int stdoutRedirect(string tempfile) {
 
     fflush(stdout);
@@ -323,23 +325,17 @@ class SimtoolsTest : public TestBase
     string outfile_notime = tempdir+"/fcr_test_notime.txt";
     string manfile = "data/example_normalized.bpm.csv";
     string egtfile = "data/humancoreexome-12v1-1_a.egt";
-    string normfile = "data/fcr_test_notime.txt";
+    string normfile = "data/fcr_test.txt";
     bool verbose = true;
     TS_ASSERT_THROWS_NOTHING(commander->commandFCR(infile, outfile, manfile, 
                                                    egtfile, verbose));
     int size = 4657; // expected file size
     assertFileSize(outfile, size);
-    TS_TRACE("FCR file is of correct length");
-    // compare output data; first, need to strip out file creation time
-    string cmd = "grep -v \"^Processing Date\" "+outfile+" > "+outfile_notime;
-    int status = system(cmd.c_str());
-    if (status!=0) {
-      cerr << "Failed to grep test FCR file: " << outfile << endl;
-      throw 1;
-    }
-    size = 4621;
-    assertFilesIdentical(normfile, outfile_notime, size);
-    TS_TRACE("FCR file is identical to master");
+    TS_TRACE("FCR output file is of expected length");
+    FcrData data_test = FcrData(outfile);
+    FcrData data_ref = FcrData(normfile);
+    TS_ASSERT(data_test.equivalent(data_ref));
+    TS_TRACE("FCR output file is equivalent to reference copy");
   }
 
   void testGenoSNP(void) {

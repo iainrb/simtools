@@ -205,3 +205,158 @@ void Fcr::write(Egt *egt, Manifest *manifest, ostream *outStream,
   }
  delete gtc;
 } 
+
+
+FcrData::FcrData(string infile) {
+  ifstream inStream;
+  string line;
+  bool body = false;
+  inStream.open(infile.c_str());
+  int total = 0;
+  unsigned int fieldsExpected = 13;
+  while (getline(inStream, line)) {
+    if (line.compare(0, 8, "SNP Name")==0) {
+      // column headers are first line of body
+      body = true;
+      continue;
+    }
+    if (body) {
+      total += 1;
+      // if length of tokens != 13, raise error
+      vector<string> tokens = splitByWhiteSpace(line); 
+      if (tokens.size() != fieldsExpected) {
+        cerr << "Wrong number of fields in FCR line: Expected " <<
+          fieldsExpected << ", found " << tokens.size() << endl;
+        throw 1;
+      }
+      snps.push_back(tokens[0]);
+      samples.push_back(tokens[1]);
+      alleles_a.push_back(tokens[2]);
+      alleles_b.push_back(tokens[3]);      
+      gcScore.push_back(atof(tokens[4].c_str()));
+      theta.push_back(atof(tokens[5].c_str()));
+      radius.push_back(atof(tokens[6].c_str()));
+      x.push_back(atof(tokens[7].c_str()));
+      y.push_back(atof(tokens[8].c_str()));
+      x_raw.push_back(atoi(tokens[9].c_str()));
+      y_raw.push_back(atoi(tokens[10].c_str()));
+      logR.push_back(atof(tokens[11].c_str()));
+      baf.push_back(atof(tokens[12].c_str()));
+    } else {
+      header.push_back(line);
+    }
+  }
+  inStream.close();
+  this->total = total;
+}
+
+bool FcrData::equivalent(FcrData other, bool verbose) {
+  // check for equality on data fields with another FcrData object
+  // TODO also check appropriate header calubes
+
+  bool equal = true;
+
+  double epsilon = 1e-5;
+  if (total != other.total) {
+    equal = false;
+    if (verbose) {
+      cerr << "Number of (snp, sample) pairs is not equal" << endl;
+    }
+  } else {
+    for (int i=0; i<total; i++) {
+      if (snps[i] != other.snps[i]) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal SNPs at position " << i << endl; 
+        }
+        break;
+      } else if (samples[i] != other.samples[i]) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal sample names at position " << i << endl; 
+        }
+        break;
+      } else if (alleles_a[i] != other.alleles_a[i]) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal A alleles at position " << i << endl; 
+        }
+        break;
+      } else if (alleles_b[i] != other.alleles_b[i]) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal B alleles at position " << i << endl; 
+        }
+        break;
+      } else if (abs(gcScore[i] - other.gcScore[i]) > epsilon) {
+        cerr << "ABS: " << abs(gcScore[i] - other.gcScore[i]) << endl;
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal GC scores at position " << i << endl; 
+        }
+        break;
+      } else if (abs(theta[i] - other.theta[i]) > epsilon) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal theta at position " << i << endl; 
+        }
+        break;
+      } else if (abs(radius[i] - other.radius[i]) > epsilon) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal radius at position " << i << endl; 
+        }
+        break;
+      } else if (abs(x[i] - other.x[i]) > epsilon) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal normalised x intensity at position " << i << endl; 
+        }
+        break;
+      } else if (abs(y[i] - other.y[i]) > epsilon) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal normalised y intensity at position " << i << endl; 
+        }
+        break;
+      } else if (x_raw[i] != other.x_raw[i]) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal raw x intensity at position " << i << endl; 
+        }
+        break;
+      } else if (y_raw[i] != other.y_raw[i]) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal raw y intensity at position " << i << endl; 
+        }
+        break;
+      } else if (abs(logR[i] - other.logR[i]) > epsilon) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal logR value at position " << i << endl; 
+        }
+        break;
+      } else if (abs(baf[i] - other.baf[i]) > epsilon) {
+        equal = false;
+        if (verbose) { 
+          cerr << "Unequal B allele frequency at position " << i << endl; 
+        }
+        break;
+      }
+    }
+  }
+  return equal;
+                
+}
+
+vector<string> FcrData::splitByWhiteSpace(string str) {
+  // split line into tokens by iterating over a stringstream
+  string buffer; 
+  stringstream ss(str); // Insert the string into a stream
+  vector<string> tokens; // Create vector to hold our words
+  while (ss >> buffer) {
+    tokens.push_back(buffer);
+  }
+  return tokens;
+}
