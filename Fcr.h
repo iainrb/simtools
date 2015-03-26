@@ -61,6 +61,7 @@ class FcrData {
  // "Real" FCR files are typically too big to slurp into memory
  public:
   int total;
+  map<string, string> header;
   FcrData(string infile);
   vector<string> header;
   vector<string> snps;
@@ -79,7 +80,9 @@ class FcrData {
   bool equivalent(FcrData other, bool verbose=true);
 
  private:
+  map<string, string> parseHeader(vector<string> header);
   vector<string> splitByWhiteSpace(string str);
+
 
 };
 

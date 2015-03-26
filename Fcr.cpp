@@ -216,7 +216,7 @@ FcrData::FcrData(string infile) {
   unsigned int fieldsExpected = 13;
   while (getline(inStream, line)) {
     if (line.compare(0, 8, "SNP Name")==0) {
-      // column headers are first line of body
+      // column titles are first line of body
       body = true;
       continue;
     }
@@ -245,6 +245,10 @@ FcrData::FcrData(string infile) {
     } else {
       header.push_back(line);
     }
+  }
+  if (body==false) {
+    cerr << "Body of FCR file not found!" << endl;
+    throw 1;
   }
   inStream.close();
   this->total = total;
@@ -348,6 +352,49 @@ bool FcrData::equivalent(FcrData other, bool verbose) {
   }
   return equal;
                 
+}
+
+map<string, string> FcrData::parseHeader(vector<string> input) {
+  // parse header fields
+  total = input.size();
+  if (total < 9 || total > 10) {
+    cerr << "Found " << total << " lines in FCR header, expected 9 or 10" 
+         << endl;
+    throw 1;
+  }
+  vector<string> keys;
+  keys.push_back("[Header]");
+  keys.push_back("GSGT Version");
+  keys.push_back("Processing Date");
+  keys.push_back("Content");
+  keys.push_back("Num SNPs");
+  keys.push_back("Total SNPs");
+  keys.push_back("Num Samples");
+  keys.push_back("Total Samples");
+  keys.push_back("File");
+  keys.push_back("[Data]");
+  
+  vector<int> keyLengths(keys.size(), 0);
+  for (int i=0; i<keys.size(); i++) {
+    keyLengths[i] = keys[i].size();
+  }
+
+  // value is the original input string, with prefix removed?
+
+  map<string, string> header;
+  for (int i=0; i<total; i++) {
+    for (int j=0; j<keys.size(); j++) {
+      if (input[i].compare(0, keyLengths[j], keys[j])==0) {
+        // TODO remove prefix string from the map value
+        header[keys[j]] = input[i];
+        break;
+      }
+    }
+  }
+
+  // TODO check that all keys in list have values assigned
+
+  return header;
 }
 
 vector<string> FcrData::splitByWhiteSpace(string str) {
