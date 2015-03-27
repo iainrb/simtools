@@ -60,10 +60,12 @@ class FcrData {
  // Intended only for running tests
  // "Real" FCR files are typically too big to slurp into memory
  public:
-  int total;
+  int totalPairs; // number of SNP/sample pairs
+  string timeStampKey;
+  string fileKey;
+  vector<string> headerKeys;
   map<string, string> header;
   FcrData(string infile);
-  vector<string> header;
   vector<string> snps;
   vector<string> samples;
   vector<string> alleles_a;
@@ -80,6 +82,7 @@ class FcrData {
   bool equivalent(FcrData other, bool verbose=true);
 
  private:
+  bool equivalentHeaders(FcrData other, bool verbose=true);
   map<string, string> parseHeader(vector<string> header);
   vector<string> splitByWhiteSpace(string str);
 

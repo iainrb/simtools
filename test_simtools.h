@@ -322,7 +322,6 @@ class SimtoolsTest : public TestBase
     Commander *commander = new Commander();
     string infile = "data/example.json";
     string outfile = tempdir+"/fcr_test.txt";
-    string outfile_notime = tempdir+"/fcr_test_notime.txt";
     string manfile = "data/example_normalized.bpm.csv";
     string egtfile = "data/humancoreexome-12v1-1_a.egt";
     string normfile = "data/fcr_test.txt";
@@ -332,9 +331,16 @@ class SimtoolsTest : public TestBase
     int size = 4657; // expected file size
     assertFileSize(outfile, size);
     TS_TRACE("FCR output file is of expected length");
-    FcrData data_test = FcrData(outfile);
     FcrData data_ref = FcrData(normfile);
-    TS_ASSERT(data_test.equivalent(data_ref));
+    TS_ASSERT(data_ref.totalPairs == 50);
+    TS_ASSERT(data_ref.snps.size() == 50);
+    TS_ASSERT(data_ref.samples.size() == 50);
+    TS_ASSERT(data_ref.header["Num SNPs"].compare("10")==0);
+    TS_ASSERT(data_ref.header["Num Samples"].compare("5")==0);
+    TS_ASSERT(data_ref.equivalent(data_ref));
+    FcrData data_test = FcrData(outfile);
+    TS_TRACE("Created and tested FCRData objects"); 
+    TS_ASSERT(data_ref.equivalent(data_test));
     TS_TRACE("FCR output file is equivalent to reference copy");
   }
 

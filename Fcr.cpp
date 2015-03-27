@@ -212,8 +212,22 @@ FcrData::FcrData(string infile) {
   string line;
   bool body = false;
   inStream.open(infile.c_str());
-  int total = 0;
+  totalPairs = 0;
+  timeStampKey = "Processing Date";
+  fileKey = "File";
   unsigned int fieldsExpected = 13;
+  vector<string> header_lines;
+  // populate the list of header prefixes, used as hash keys
+  headerKeys.push_back("[Header]");
+  headerKeys.push_back("GSGT Version");
+  headerKeys.push_back(timeStampKey);
+  headerKeys.push_back("Content");
+  headerKeys.push_back("Num SNPs");
+  headerKeys.push_back("Total SNPs");
+  headerKeys.push_back("Num Samples");
+  headerKeys.push_back("Total Samples");
+  headerKeys.push_back(fileKey);
+  headerKeys.push_back("[Data]");
   while (getline(inStream, line)) {
     if (line.compare(0, 8, "SNP Name")==0) {
       // column titles are first line of body
@@ -221,7 +235,7 @@ FcrData::FcrData(string infile) {
       continue;
     }
     if (body) {
-      total += 1;
+      totalPairs += 1;
       // if length of tokens != 13, raise error
       vector<string> tokens = splitByWhiteSpace(line); 
       if (tokens.size() != fieldsExpected) {
@@ -243,7 +257,7 @@ FcrData::FcrData(string infile) {
       logR.push_back(atof(tokens[11].c_str()));
       baf.push_back(atof(tokens[12].c_str()));
     } else {
-      header.push_back(line);
+      header_lines.push_back(line);
     }
   }
   if (body==false) {
@@ -251,23 +265,25 @@ FcrData::FcrData(string infile) {
     throw 1;
   }
   inStream.close();
-  this->total = total;
+  this->header = parseHeader(header_lines);
 }
 
 bool FcrData::equivalent(FcrData other, bool verbose) {
   // check for equality on data fields with another FcrData object
-  // TODO also check appropriate header calubes
-
   bool equal = true;
-
   double epsilon = 1e-5;
-  if (total != other.total) {
+  if (totalPairs != other.totalPairs) {
     equal = false;
     if (verbose) {
       cerr << "Number of (snp, sample) pairs is not equal" << endl;
     }
+  } else if (!equivalentHeaders(other)) {
+    equal = false;
+    if (verbose) {
+      cerr << "FCR headers are not equivalent" << endl;
+    }
   } else {
-    for (int i=0; i<total; i++) {
+    for (int i=0; i<totalPairs; i++) {
       if (snps[i] != other.snps[i]) {
         equal = false;
         if (verbose) { 
@@ -354,46 +370,55 @@ bool FcrData::equivalent(FcrData other, bool verbose) {
                 
 }
 
+bool FcrData::equivalentHeaders(FcrData other, bool verbose) {
+  map<string, string> myHead = this->header;
+  map<string, string> otherHead = other.header;
+  bool equivalent = true;
+  for (unsigned int i=0; i<headerKeys.size(); i++) {
+    string myVal = myHead[headerKeys[i]];
+    string otherVal = otherHead[headerKeys[i]];
+    if (headerKeys[i].compare(fileKey) == 0 || 
+	headerKeys[i].compare(timeStampKey) == 0) {
+      continue; // ignore the timestamp, and "File K of N" lines
+    } else if (myVal.compare(otherVal)!=0) {
+      equivalent = false;
+      if (verbose) {
+	cerr << "Differing values in FCR headers: " << myVal << ", " 
+	     << otherVal << endl;
+      }
+      break;
+    }
+  }
+  return equivalent;
+}
+
 map<string, string> FcrData::parseHeader(vector<string> input) {
   // parse header fields
-  total = input.size();
-  if (total < 9 || total > 10) {
-    cerr << "Found " << total << " lines in FCR header, expected 9 or 10" 
-         << endl;
-    throw 1;
+  vector<unsigned int> keyLengths(headerKeys.size(), 0);
+  for (unsigned int i=0; i<headerKeys.size(); i++) {
+    keyLengths[i] = headerKeys[i].size();
   }
-  vector<string> keys;
-  keys.push_back("[Header]");
-  keys.push_back("GSGT Version");
-  keys.push_back("Processing Date");
-  keys.push_back("Content");
-  keys.push_back("Num SNPs");
-  keys.push_back("Total SNPs");
-  keys.push_back("Num Samples");
-  keys.push_back("Total Samples");
-  keys.push_back("File");
-  keys.push_back("[Data]");
-  
-  vector<int> keyLengths(keys.size(), 0);
-  for (int i=0; i<keys.size(); i++) {
-    keyLengths[i] = keys[i].size();
-  }
-
-  // value is the original input string, with prefix removed?
-
   map<string, string> header;
-  for (int i=0; i<total; i++) {
-    for (int j=0; j<keys.size(); j++) {
-      if (input[i].compare(0, keyLengths[j], keys[j])==0) {
-        // TODO remove prefix string from the map value
-        header[keys[j]] = input[i];
+  for (unsigned int i=0; i<input.size(); i++) {
+    for (unsigned int j=0; j<headerKeys.size(); j++) {
+      if (input[i].compare(0, keyLengths[j], headerKeys[j])==0) {
+        // remove prefix string from the map value
+	// also remove the following tab character (if any)
+	// [Header], [Data] and Content have empty strings as values
+	int start;
+	if (input[i].size() == keyLengths[j]) {  start = keyLengths[j]; }
+	else { start = keyLengths[j] + 1; } // remove the tab
+        header[headerKeys[j]] = input[i].substr(start);
         break;
       }
     }
   }
-
-  // TODO check that all keys in list have values assigned
-
+  // the File line is optional; all others should have values
+  if (header.size() < headerKeys.size() -1) {
+    cerr << "Insufficient lines parsed in header: Expected minimum " << 
+      headerKeys.size() -1 << ", found " << header.size() << endl;
+    throw 1;
+  }
   return header;
 }
 
