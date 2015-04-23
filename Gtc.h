@@ -76,9 +76,12 @@ public:
 	void open(string filename, int control=ALL);
 	void open(char *f, int control=ALL);
 	string dump(void);
+	string json_dump(void);
 	const char *dumpc(void) { return dump().c_str(); }
 	double passRate(double cutoff);
 	double correctedPassRate(double cutoff);
+
+        void normalizeIntensity(double x_raw, double y_raw, double &x_norm, double &y_norm, unsigned int norm_id);
 
 	string errorMsg;
 	string filename;
