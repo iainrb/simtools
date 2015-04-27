@@ -222,20 +222,11 @@ void Commander::commandCreate(string infile, string outfile, bool normalize, str
       double xn;
       double yn;
       int idx = snp->index - 1;   // index is zero based in arrays, but starts from 1 in the map file
+      double x_raw = gtc->xRawIntensity[idx];
+      double y_raw = gtc->yRawIntensity[idx];
+      unsigned int norm_id = manifest->normIdMap[snp->normId];
       if (normalize) {
-	// This is the normalization calculation, according to Illumina
-	unsigned int norm = manifest->normIdMap[snp->normId];
-	XFormClass *XF = &(gtc->XForm[norm]);
-	double tempx = gtc->xRawIntensity[idx] - XF->xOffset;
-	double tempy = gtc->yRawIntensity[idx] - XF->yOffset;
-	double cos_theta = cos(XF->theta);
-	double sin_theta = sin(XF->theta);
-	double tempx2 = cos_theta * tempx + sin_theta * tempy;
-	double tempy2 = -sin_theta * tempx + cos_theta * tempy;
-	double tempx3 = tempx2 - XF->shear * tempy2;
-	double tempy3 = tempy2;
-	xn = tempx3 / XF->xScale;
-	yn = tempy3 / XF->yScale;
+        gtc->normalizeIntensity(x_raw, y_raw, xn, yn, norm_id);
       } else {
 	xn = gtc->xRawIntensity[idx];
 	yn = gtc->yRawIntensity[idx];
@@ -250,7 +241,6 @@ void Commander::commandCreate(string infile, string outfile, bool normalize, str
 	v = yn; sim->write(&v,sizeof(v));
       }
     }
-    
   }
   sim->close();
   delete sim;
